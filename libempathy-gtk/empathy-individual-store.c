@@ -60,6 +60,7 @@ struct _EmpathyIndividualStorePriv
 {
   gboolean show_avatars;
   gboolean show_groups;
+  gboolean force_ungrouped;
   gboolean is_compact;
   gboolean show_protocols;
   EmpathyIndividualStoreSort sort_criterium;
@@ -89,6 +90,7 @@ enum
   PROP_SHOW_AVATARS,
   PROP_SHOW_PROTOCOLS,
   PROP_SHOW_GROUPS,
+  PROP_FORCE_UNGROUPED,
   PROP_IS_COMPACT,
   PROP_SORT_CRITERIUM
 };
@@ -350,7 +352,7 @@ empathy_individual_store_add_individual (EmpathyIndividualStore *self,
   group_set = folks_group_details_get_groups (
       FOLKS_GROUP_DETAILS (individual));
 
-  if (gee_collection_get_size (GEE_COLLECTION (group_set)) > 0)
+  if (!self->priv->force_ungrouped && gee_collection_get_size (GEE_COLLECTION (group_set)) > 0)
     {
       /* add the contact to its groups */
       GeeIterator *group_iter =
@@ -977,6 +979,9 @@ individual_store_get_property (GObject *object,
     case PROP_SHOW_GROUPS:
       g_value_set_boolean (value, self->priv->show_groups);
       break;
+    case PROP_FORCE_UNGROUPED:
+      g_value_set_boolean (value, self->priv->force_ungrouped);
+      break;
     case PROP_IS_COMPACT:
       g_value_set_boolean (value, self->priv->is_compact);
       break;
@@ -1007,6 +1012,10 @@ individual_store_set_property (GObject *object,
       break;
     case PROP_SHOW_GROUPS:
       empathy_individual_store_set_show_groups (EMPATHY_INDIVIDUAL_STORE
+          (object), g_value_get_boolean (value));
+      break;
+    case PROP_FORCE_UNGROUPED:
+      empathy_individual_store_set_force_ungrouped (EMPATHY_INDIVIDUAL_STORE
           (object), g_value_get_boolean (value));
       break;
     case PROP_IS_COMPACT:
@@ -1050,6 +1059,13 @@ empathy_individual_store_class_init (EmpathyIndividualStoreClass *klass)
           "Show Groups",
           "Whether contact list should display "
           "contact groups", TRUE, G_PARAM_READWRITE));
+  g_object_class_install_property (object_class,
+      PROP_FORCE_UNGROUPED,
+      g_param_spec_boolean ("force-ungrouped",
+          "Force Ungrouped",
+          "Whether contact list should iggore contact groups "
+          "and show them as ungrouped ",
+          FALSE, G_PARAM_READWRITE));
   g_object_class_install_property (object_class,
       PROP_IS_COMPACT,
       g_param_spec_boolean ("is-compact",
@@ -1532,6 +1548,51 @@ empathy_individual_store_set_show_groups (EmpathyIndividualStore *self,
     }
 
   g_object_notify (G_OBJECT (self), "show-groups");
+}
+
+gboolean
+empathy_individual_store_get_force_ungrouped (EmpathyIndividualStore *self)
+{
+  g_return_val_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self), TRUE);
+
+  return self->priv->force_ungrouped;
+}
+
+void
+empathy_individual_store_set_force_ungrouped (EmpathyIndividualStore *self,
+    gboolean force_ungrouped)
+{
+  EmpathyIndividualStoreClass *klass;
+
+  g_return_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self));
+
+  klass = EMPATHY_INDIVIDUAL_STORE_GET_CLASS ( self);
+
+  if (self->priv->force_ungrouped == force_ungrouped)
+    {
+      return;
+    }
+
+  self->priv->force_ungrouped = force_ungrouped;
+
+  if (!klass->initial_loading (self))
+    {
+      /* Remove all contacts and add them back, not optimized but
+       * that's the easy way :)
+       *
+       * This is only done if there's not a pending setup idle
+       * callback, otherwise it will race and the contacts will get
+       * added twice */
+
+      gtk_tree_store_clear (GTK_TREE_STORE (self));
+      /* Also clear the cache */
+      g_hash_table_remove_all (self->priv->folks_individual_cache);
+      g_hash_table_remove_all (self->priv->empathy_group_cache);
+
+      klass->reload_individuals (self);
+    }
+
+  g_object_notify (G_OBJECT (self), "force-ungrouped");
 }
 
 gboolean

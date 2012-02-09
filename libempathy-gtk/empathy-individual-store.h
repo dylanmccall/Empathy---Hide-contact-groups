@@ -102,6 +102,12 @@ gboolean empathy_individual_store_get_show_groups (
 void empathy_individual_store_set_show_groups (EmpathyIndividualStore *store,
     gboolean show_groups);
 
+gboolean empathy_individual_store_get_force_ungrouped (
+    EmpathyIndividualStore *store);
+
+void empathy_individual_store_set_force_ungrouped (EmpathyIndividualStore *store,
+    gboolean force_ungrouped);
+
 gboolean empathy_individual_store_get_is_compact (
     EmpathyIndividualStore *store);
 

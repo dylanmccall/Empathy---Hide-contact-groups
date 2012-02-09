@@ -1618,8 +1618,8 @@ static void roster_window_notify_show_groups_cb (GSettings *gsettings,
 
   value = g_settings_get_boolean (gsettings, EMPATHY_PREFS_UI_SHOW_GROUPS);
 
-  empathy_individual_store_set_show_groups (self->priv->individual_store,
-      value);
+  empathy_individual_store_set_force_ungrouped (self->priv->individual_store,
+      ! value);
 }
 
 static void roster_window_notify_show_protocols_cb (GSettings *gsettings,
