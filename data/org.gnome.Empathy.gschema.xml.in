@@ -42,6 +42,11 @@
       <_summary>Show offline contacts</_summary>
       <_description>Whether to show contacts that are offline in the contact list.</_description>
     </key>
+    <key type="b" name="show-groups">
+      <default>true</default>
+      <summary>Show groups</summary>
+      <description>Whether to show contacts in groups in the contact list.</description>
+    </key>
     <key name="show-avatars" type="b">
       <default>true</default>
       <_summary>Show avatars</_summary>

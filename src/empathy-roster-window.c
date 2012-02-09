@@ -1610,6 +1610,18 @@ roster_window_view_contacts_list_size_cb (GtkRadioAction *action,
   g_object_unref (gsettings_ui);
 }
 
+static void roster_window_notify_show_groups_cb (GSettings *gsettings,
+    const gchar *key,
+    EmpathyRosterWindow *self)
+{
+  gboolean value;
+
+  value = g_settings_get_boolean (gsettings, EMPATHY_PREFS_UI_SHOW_GROUPS);
+
+  empathy_individual_store_set_show_groups (self->priv->individual_store,
+      value);
+}
+
 static void roster_window_notify_show_protocols_cb (GSettings *gsettings,
     const gchar *key,
     EmpathyRosterWindow *self)
@@ -2658,6 +2670,14 @@ empathy_roster_window_init (EmpathyRosterWindow *self)
       G_CALLBACK (roster_window_notify_show_offline_cb), show_offline_widget);
 
   gtk_toggle_action_set_active (show_offline_widget, show_offline);
+  
+  /* Show contact groups ? */
+  g_signal_connect (self->priv->gsettings_ui,
+      "changed::" EMPATHY_PREFS_UI_SHOW_GROUPS,
+      G_CALLBACK (roster_window_notify_show_groups_cb), self);
+  
+  roster_window_notify_show_groups_cb (self->priv->gsettings_ui,
+      EMPATHY_PREFS_UI_SHOW_GROUPS, self);
 
   /* Show protocol ? */
   g_signal_connect (self->priv->gsettings_ui,
