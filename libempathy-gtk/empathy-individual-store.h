@@ -96,6 +96,9 @@ gboolean empathy_individual_store_get_show_avatars (
 void empathy_individual_store_set_show_avatars (EmpathyIndividualStore *store,
     gboolean show_avatars);
 
+void empathy_individual_store_reload (
+    EmpathyIndividualStore *store);
+
 gboolean empathy_individual_store_get_show_groups (
     EmpathyIndividualStore *store);
 

@@ -1505,31 +1505,15 @@ empathy_individual_store_set_show_protocols (EmpathyIndividualStore *self,
   g_object_notify (G_OBJECT (self), "show-protocols");
 }
 
-gboolean
-empathy_individual_store_get_show_groups (EmpathyIndividualStore *self)
-{
-  g_return_val_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self), TRUE);
-
-  return self->priv->show_groups;
-}
-
 void
-empathy_individual_store_set_show_groups (EmpathyIndividualStore *self,
-    gboolean show_groups)
+empathy_individual_store_reload (EmpathyIndividualStore *self)
 {
   EmpathyIndividualStoreClass *klass;
-
+  
   g_return_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self));
-
+  
   klass = EMPATHY_INDIVIDUAL_STORE_GET_CLASS ( self);
-
-  if (self->priv->show_groups == show_groups)
-    {
-      return;
-    }
-
-  self->priv->show_groups = show_groups;
-
+  
   if (!klass->initial_loading (self))
     {
       /* Remove all contacts and add them back, not optimized but
@@ -1546,6 +1530,30 @@ empathy_individual_store_set_show_groups (EmpathyIndividualStore *self,
 
       klass->reload_individuals (self);
     }
+}
+
+gboolean
+empathy_individual_store_get_show_groups (EmpathyIndividualStore *self)
+{
+  g_return_val_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self), TRUE);
+
+  return self->priv->show_groups;
+}
+
+void
+empathy_individual_store_set_show_groups (EmpathyIndividualStore *self,
+    gboolean show_groups)
+{
+  g_return_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self));
+
+  if (self->priv->show_groups == show_groups)
+    {
+      return;
+    }
+
+  self->priv->show_groups = show_groups;
+
+  empathy_individual_store_reload (self);
 
   g_object_notify (G_OBJECT (self), "show-groups");
 }
@@ -1562,11 +1570,7 @@ void
 empathy_individual_store_set_force_ungrouped (EmpathyIndividualStore *self,
     gboolean force_ungrouped)
 {
-  EmpathyIndividualStoreClass *klass;
-
   g_return_if_fail (EMPATHY_IS_INDIVIDUAL_STORE (self));
-
-  klass = EMPATHY_INDIVIDUAL_STORE_GET_CLASS ( self);
 
   if (self->priv->force_ungrouped == force_ungrouped)
     {
@@ -1575,22 +1579,7 @@ empathy_individual_store_set_force_ungrouped (EmpathyIndividualStore *self,
 
   self->priv->force_ungrouped = force_ungrouped;
 
-  if (!klass->initial_loading (self))
-    {
-      /* Remove all contacts and add them back, not optimized but
-       * that's the easy way :)
-       *
-       * This is only done if there's not a pending setup idle
-       * callback, otherwise it will race and the contacts will get
-       * added twice */
-
-      gtk_tree_store_clear (GTK_TREE_STORE (self));
-      /* Also clear the cache */
-      g_hash_table_remove_all (self->priv->folks_individual_cache);
-      g_hash_table_remove_all (self->priv->empathy_group_cache);
-
-      klass->reload_individuals (self);
-    }
+  empathy_individual_store_reload (self);
 
   g_object_notify (G_OBJECT (self), "force-ungrouped");
 }
